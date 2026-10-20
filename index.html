@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মুন্তাখাব হাদীস স্টাডি ও অডিও রিডার</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Classical Arabic & Bengali -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        /* Beautiful Quranic & Hadith Naskh Arabic Font */
+        .arabic-text {
+            font-family: 'Amiri Quran', 'Scheherazade New', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2.3;
+            letter-spacing: 0.5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .playing-active {
+            border-color: #059669 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important;
+            background-color: #f0fdf4 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-emerald-850 bg-emerald-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-emerald-800 flex items-center justify-center text-emerald-300 text-xl font-bold border border-emerald-700 shadow-inner">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">মুন্তাখাব হাদীস স্টাডি ও অডিও রিডার</h1>
+                    <p class="text-xs text-emerald-200">আরবি-বাংলা তিলাওয়াত, বিরতি ও কাস্টম প্লেলিস্ট</p>
+                </div>
+            </div>
+
+            <!-- Quick Data Export/Import & Add Hadith buttons -->
+            <div class="flex items-center gap-2 text-sm">
+                <!-- NEW BULK IMPORT BUTTON -->
+                <button onclick="openModal('bulkModal')" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-xl text-white font-semibold shadow transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-layer-group text-sm"></i> <span>একত্রে অনেকগুলো যোগ (বাল্ক)</span>
+                </button>
+                <button onclick="openModal('addModal')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold shadow transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-plus-circle text-sm"></i> <span class="hidden sm:inline">একটি যোগ</span>
+                </button>
+                <button onclick="exportData()" title="ডাটা ব্যাকআপ ডাউনলোড (JSON)" class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-700 rounded-xl text-emerald-200 transition border border-emerald-700">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label title="ডাটা ফাইল আপলোড / রিস্টোর" class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-700 rounded-xl text-emerald-200 transition border border-emerald-700 cursor-pointer">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="importInput" onchange="importData(event)" accept=".json" class="hidden">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Sidebar: Chapter Selector & Chapters List -->
+        <aside class="lg:col-span-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-auto lg:h-[calc(100vh-120px)] lg:sticky lg:top-20">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-emerald-600"></i> অধ্যায় তালিকা (সূচিপত্র)
+                </h2>
+                <span id="chapterCountBadge" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-semibold">১৭ টি অধ্যায়</span>
+            </div>
+
+            <!-- Search or filter chapters -->
+            <div class="relative mb-3">
+                <input type="text" id="chapterSearch" oninput="filterChapters()" placeholder="অধ্যায় খুঁজুন (যেমন: ঈমান, নামায...)" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+            </div>
+
+            <!-- Chapter buttons list -->
+            <div id="chaptersContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 max-h-72 lg:max-h-full">
+                <!-- Dynamically generated chapters -->
+            </div>
+        </aside>
+
+        <!-- Main Content Area: Player controls and Hadith cards -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- Active Chapter Bar & Enhanced Audio Playback Controller -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">বর্তমান পাঠ্য অধ্যায়</span>
+                        <h2 id="currentChapterTitle" class="text-xl sm:text-2xl font-bold text-slate-800 mt-0.5">কালেমায়ে তাইয়্যেবা: ঈমান</h2>
+                        <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                            <span id="currentChapterStats"><i class="fa-regular fa-file-lines mr-1 text-emerald-600"></i> আয়াত: ০ | হাদিস: ৫</span>
+                            <span>•</span>
+                            <button onclick="openModal('bulkModal')" class="text-amber-700 hover:underline font-semibold">
+                                <i class="fa-solid fa-bolt mr-0.5"></i> একসাথে ৫-১০টি পেস্ট করুন
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Sequential Range Player Input & Controls -->
+                    <div class="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                                <i class="fa-solid fa-list-check text-emerald-600"></i>
+                                <span>পড়ার ক্রম নির্ধারণ</span>
+                            </label>
+                            <span class="text-[11px] text-slate-500">(যেমন: 1-5 বা 1,3,4,9,15)</span>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="text" id="sequenceInput" placeholder="ক্রম: 1-5 বা 1, 3, 5 (খালি রাখলে সব)" class="px-3 py-1.5 text-sm bg-white border border-slate-300 rounded-lg w-40 sm:w-48 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono">
+                            
+                            <!-- Play / Resume Button -->
+                            <button onclick="startOrResumePlayback()" id="playSequenceBtn" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow transition flex items-center gap-1.5 active:scale-95">
+                                <i class="fa-solid fa-play text-xs"></i> <span id="playBtnText">শুনুন</span>
+                            </button>
+                            
+                            <!-- Pause Button (Hidden when not playing) -->
+                            <button onclick="pausePlayback()" id="pauseBtn" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold shadow transition hidden flex items-center gap-1.5 active:scale-95">
+                                <i class="fa-solid fa-pause text-xs"></i> <span>বিরতি</span>
+                            </button>
+
+                            <!-- Stop Button -->
+                            <button onclick="stopPlayback()" id="stopBtn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold shadow transition hidden flex items-center gap-1 active:scale-95">
+                                <i class="fa-solid fa-stop text-xs"></i> <span>থামুন</span>
+                            </button>
+
+                            <!-- Pocket Mode Button: Black Screen simulator for battery saving without pausing -->
+                            <button onclick="togglePocketMode(true)" title="পকেট মোড (ডিসপ্লে কালো করে ব্যাটারি বাঁচিয়ে শোনা)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-slate-200 rounded-lg text-xs font-semibold shadow transition flex items-center gap-1 active:scale-95">
+                                <i class="fa-solid fa-moon text-amber-400"></i> <span>পকেট মোড</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Voice, Speed & Language Toggles -->
+                <div class="pt-4 flex flex-col gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-slate-700 bg-emerald-50/70 p-3 rounded-xl border border-emerald-100">
+                        <!-- Language Checks -->
+                        <div class="flex items-center gap-4">
+                            <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
+                                <input type="checkbox" id="readArabicCheck" class="w-4 h-4 accent-emerald-600 rounded">
+                                <span>আরবি পাঠ পড়বে</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
+                                <input type="checkbox" id="readBanglaCheck" checked class="w-4 h-4 accent-emerald-600 rounded">
+                                <span class="text-emerald-900 font-semibold">শুধু বাংলা অনুবাদ পড়বে</span>
+                            </label>
+                        </div>
+
+                        <!-- Content Type Filter for Playback & View -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-600">প্রদর্শন ও পড়া:</span>
+                            <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-white text-xs">
+                                <button onclick="setContentFilter('all')" id="filterAllBtn" class="px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium">সবগুলো</button>
+                                <button onclick="setContentFilter('ayah')" id="filterAyahBtn" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-emerald-700 font-medium">শুধু আয়াত</button>
+                                <button onclick="setContentFilter('hadith')" id="filterHadithBtn" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-emerald-700 font-medium">শুধু হাদিস</button>
+                            </div>
+                        </div>
+
+                        <!-- Active Live Audio Indicator -->
+                        <div id="playingStatusBadge" class="hidden px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 animate-pulse">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span id="playingStatusText">অডিও পাঠ চলছে...</span>
+                        </div>
+                    </div>
+
+                <!-- Background & Screen Keep-Alive Notice & Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen-button text-emerald-600 text-sm"></i>
+                        <span>ডিসপ্লে অফ হওয়া রোধ (Wake Lock):</span>
+                        <span id="wakeLockStatus" class="font-semibold text-emerald-700">স্বয়ংক্রিয় সক্রিয়</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1 cursor-pointer select-none">
+                            <input type="checkbox" id="keepScreenOnToggle" checked onchange="toggleManualWakeLock(this.checked)" class="accent-emerald-600 w-3.5 h-3.5 rounded">
+                            <span class="text-[11px] text-slate-700">পড়ার সময় স্ক্রিন অন রাখবে</span>
+                        </label>
+                        <span class="text-[10px] text-slate-400">| ব্যাকগ্রাউন্ড অডিও লুপ সংযুক্ত</span>
+                    </div>
+                </div>
+
+                <!-- Voice Persona (Male/Female) and Speed configuration -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-slate-600 pt-1">
+                        <!-- Voice Gender / Selection -->
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium whitespace-nowrap"><i class="fa-solid fa-user-tie text-slate-400"></i> কণ্ঠ:</span>
+                            <select id="voicePreference" onchange="updateSelectedVoices()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                <option value="male" selected>পুরুষ কণ্ঠ (Male Voice)</option>
+                                <option value="female">নারী কণ্ঠ (Female Voice)</option>
+                                <option value="default">ডিফল্ট কণ্ঠ (System Default)</option>
+                            </select>
+                        </div>
+
+                        <!-- Speed selector -->
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium whitespace-nowrap"><i class="fa-solid fa-gauge-high text-slate-400"></i> গতি:</span>
+                            <select id="playbackRate" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                <option value="0.8">0.8x (ধীর ও স্পষ্ট)</option>
+                                <option value="1.0" selected>1.0x (স্বাভাবিক গতি)</option>
+                                <option value="1.2">1.2x (খানিকটা দ্রুত)</option>
+                            </select>
+                        </div>
+
+                        <!-- Arabic Font Size selector -->
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium whitespace-nowrap"><i class="fa-solid fa-font text-slate-400"></i> আরবি সাইজ:</span>
+                            <select id="arabicFontSize" onchange="changeArabicFontSize(this.value)" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                <option value="text-xl sm:text-2xl">স্বাভাবিক</option>
+                                <option value="text-2xl sm:text-3xl" selected>বড় ও স্পষ্ট</option>
+                                <option value="text-3xl sm:text-4xl">অনেক বড়</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of Hadith in Current Chapter -->
+            <div id="hadithListContainer" class="space-y-4">
+                <!-- Hadith & Ayah cards will be rendered here dynamically -->
+            </div>
+
+            <!-- Empty State placeholder -->
+            <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed p-6">
+                <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-600 text-2xl mb-3">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700">এই অধ্যায়ে এখনো কোনো আয়াত বা হাদিস রাখা হয়নি</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">আমার কাছ থেকে একসাথে ৫টি বা ১০টি আয়াত ও হাদিসের টেক্সট নিয়ে নিচের "একত্রে অনেকগুলো যোগ করুন" বাটনে পেস্ট করলেই সাথে সাথে সেভ হয়ে যাবে।</p>
+                <button onclick="openModal('bulkModal')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                    <i class="fa-solid fa-layer-group mr-1"></i> একসাথে অনেকগুলো পেস্ট করুন
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- NEW MODAL: BULK ADD AYAH / HADITH (একত্রে ৫-১০টি বা ২০টি পেস্ট করার বক্স) -->
+    <div id="bulkModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+                <h3 class="text-base sm:text-lg font-bold text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-600"></i> এক ক্লিকে ৫-১০টি আয়াত বা হাদিস পেস্ট করুন
+                </h3>
+                <button onclick="closeModal('bulkModal')" class="text-slate-400 hover:text-slate-600 text-lg w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">অধ্যায় নির্বাচন করুন *</label>
+                        <select id="bulkModalChapterSelect" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ক্যাটাগরি বা ধরন *</label>
+                        <select id="bulkCategorySelect" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium">
+                            <option value="auto">স্বয়ংক্রিয় সনাক্তকরণ (Auto Detect)</option>
+                            <option value="ayah">কুরআনের আয়াত (Ayah)</option>
+                            <option value="hadith" selected>হাদীস শরীফ (Hadith)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                    <strong class="text-slate-800">সহজ নিয়ম:</strong> আমি আপনাকে একসাথে ৫টি বা ১০টি হাদিস নিচের নিয়মে দেবো। আপনি সম্পূর্ণটা কপি করে হুবহু এই নিচের বক্সে পেস্ট করে দিয়ে <strong>"একত্রে সংরক্ষণ করুন"</strong> বাটনে চাপবেন।
+                    <pre class="bg-white p-2 rounded-lg border border-slate-200 text-[11px] text-emerald-800 font-mono mt-1 overflow-x-auto">
+[নম্বর: ১ | ধরন: হাদিস | সূত্র: হযরত আবু হুরায়রা (রাঃ) - বুখারী]
+আরবি: الإِيمَانُ بِضْعٌ وَسَبْعُونَ...
+বাংলা: ঈমানের সত্তরেরও অধিক শাখা রহিয়াছে...
+---
+[নম্বর: ২ | ধরন: হাদিস | সূত্র: হযরত আনাস (রাঃ)]
+আরবি: لاَ يُؤْمِنُ أَحَدُكُمْ...
+বাংলা: তোমাদের মধ্যে কেহ ততক্ষণ পর্যন্ত পূর্ণ মুমিন...</pre>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">আমার দেওয়া টেক্সটগুলো এখানে পেস্ট করুন: *</label>
+                    <textarea id="bulkTextInput" rows="8" placeholder="এখানে একসাথে একাধিক আয়াত/হাদিস পেস্ট করুন..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500 font-sans"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <span id="bulkParseStatus" class="text-xs font-medium text-slate-500"></span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="closeModal('bulkModal')" class="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">বাতিল</button>
+                        <button type="button" onclick="processBulkImport()" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold shadow transition active:scale-95 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> <span>একত্রে সংরক্ষণ করুন</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add / Edit Single Hadith -->
+    <div id="addModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 id="modalTitle" class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> আয়াত / হাদিস সংরক্ষণ
+                </h3>
+                <button onclick="closeModal('addModal')" class="text-slate-400 hover:text-slate-600 text-lg w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="hadithForm" onsubmit="saveHadith(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                <input type="hidden" id="editHadithId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ক্যাটাগরি *</label>
+                        <select id="modalItemType" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-emerald-800">
+                            <option value="ayah">📖 কুরআনের আয়াত</option>
+                            <option value="hadith" selected>📜 হাদীস শরীফ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">অধ্যায় নির্বাচন করুন *</label>
+                        <select id="modalChapterSelect" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">কিতাবের আসল নম্বর *</label>
+                        <input type="number" id="modalNumber" required min="1" placeholder="যেমন: 1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">উৎস / সূরা / রাবী / কিতাবের নাম</label>
+                    <input type="text" id="modalReference" placeholder="যেমন: সূরা আল-ইমরান: ১০২ অথবা হযরত আবু হুরায়রা (রাঃ) - বুখারী" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold text-slate-700">মূল আরবি পাঠ (হরকত সহ ইবারত)</label>
+                        <span class="text-[10px] text-slate-400">হরকত সহ লিখলে সুন্দর দেখাবে</span>
+                    </div>
+                    <textarea id="modalArabic" rows="3" placeholder="الإِيمَانُ بِضْعٌ وَسَبْعُونَ أَوْ بِضْعٌ وَسِتُّونَ شُعْبَةً..." class="arabic-text w-full px-3 py-2 text-right bg-slate-50 border border-slate-200 rounded-xl text-lg leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">বাংলা অনুবাদ (সহজ সরল অর্থ) *</label>
+                    <textarea id="modalBangla" required rows="4" placeholder="রসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম এরশাদ করিয়াছেন..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('addModal')" class="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">বাতিল</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow transition active:scale-95">সংরক্ষণ করুন</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm flex items-center gap-2 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none border border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMsg">কার্যক্রম সম্পন্ন হয়েছে</span>
+    </div>
+
+    <!-- AMOLED Pocket Mode Screen Overlay -->
+    <div id="pocketOverlay" class="fixed inset-0 bg-black z-50 hidden flex flex-col items-center justify-between p-6 select-none touch-none">
+        <div class="text-center pt-8">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 text-neutral-400 text-xs border border-neutral-800">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                পকেট মোড সক্রিয় (ডিসপ্লে অফ বিকল্প)
+            </span>
+            <p id="pocketCurrentTitle" class="text-neutral-400 text-sm mt-3 font-medium">হাদিস পাঠ চলছে...</p>
+        </div>
+
+        <div class="text-center py-12">
+            <i class="fa-solid fa-moon text-neutral-800 text-6xl mb-4"></i>
+            <p class="text-neutral-600 text-xs max-w-xs mx-auto">স্ক্রিনের আলো পুরোপুরি নিভিয়ে রাখা হয়েছে যাতে ব্যাটারি বাঁচে এবং পকেটে টাচ না লাগে।</p>
+        </div>
+
+        <div class="w-full max-w-xs pb-10 flex flex-col gap-3">
+            <button onclick="togglePocketMode(false)" class="w-full py-3.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-2xl text-sm font-semibold active:scale-95 transition flex items-center justify-center gap-2 shadow-lg">
+                <i class="fa-solid fa-lock-open text-emerald-400"></i> স্ক্রিন অন করুন (লক খুলুন)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Full chapter list matching Muntakhab Ahadith Table of Contents
+        const DEFAULT_CHAPTERS = [
+            { id: "iman", title: "কালেমায়ে তাইয়্যেবা: ঈমান", page: 17 },
+            { id: "ghaib", title: "গায়েবের বিষয়সমূহের প্রতি ঈমান", page: 55 },
+            { id: "akhirat", title: "মৃত্যুর পর আগত অবস্থাসমূহের প্রতি ঈমান", page: 102 },
+            { id: "hukum", title: "আল্লাহ তায়ালার হুকুম পালনের মধ্যে সফলতা", page: 145 },
+            { id: "namaz_farz", title: "নামায: ফরয নামায", page: 171 },
+            { id: "namaz_jamat", title: "জামাতের সহিত নামায আদায়", page: 198 },
+            { id: "namaz_sunnat", title: "সুন্নাত ও নফল নামায", page: 235 },
+            { id: "khushu", title: "খুশু-খুযু", page: 285 },
+            { id: "wudu", title: "অযুর ফাযায়েল", page: 298 },
+            { id: "masjid", title: "মসজিদের ফযীলত ও আমলসমূহ", page: 310 },
+            { id: "ilm", title: "এলেম ও যিকির: এলেম", page: 317 },
+            { id: "quran_zikir", title: "কুরআনে কারীমের ফাযায়েল", page: 352 },
+            { id: "zikir_fazail", title: "আল্লাহ তায়ালার যিকিরের ফাযায়েল", page: 391 },
+            { id: "masnoon_dua", title: "রাসূলুল্লাহ (সাঃ) হইতে বর্ণিত যিকির ও দোয়াসমূহ", page: 459 },
+            { id: "ikram", title: "একরামে মুসলিম ও উত্তম চরিত্র", page: 511 },
+            { id: "ikhlas", title: "এখলাসে নিয়ত (সহীহ নিয়ত)", page: 683 },
+            { id: "dawat", title: "দাওয়াত ও তবলীগ", page: 722 }
+        ];
+
+        // Seed data with Quranic Ayah and Hadith separated with book original numbers
+        const SEED_HADITHS = [
+            {
+                id: "seed_ayah_1",
+                type: "ayah",
+                chapterId: "iman",
+                number: 1,
+                reference: "সূরা আল-ইমরান: ১০২",
+                arabic: "يَا أَيُّهَا الَّذِينَ آمَنُوا اتَّقُوا اللَّهَ حَقَّ تُقَاتِهِ وَلَا تَمُوتُنَّ إِلَّا وَأَنتُم مُّسْلِمُونَ.",
+                bangla: "হে ঈমানদারগণ! তোমরা আল্লাহ তায়ালাকে সেইরূপ ভয় কর যেরূপ ভয় করা উচিত এবং অবশ্যই মুসলমান থাকা ব্যতীত মৃত্যুবরণ করিও না।"
+            },
+            {
+                id: "seed_1",
+                type: "hadith",
+                chapterId: "iman",
+                number: 1,
+                reference: "হযরত আবু হুরায়রা (রাঃ) - বুখারী ও মুসলিম",
+                arabic: "الإِيمَانُ بِضْعٌ وَسَبْعُونَ أَوْ بِضْعٌ وَسِتُّونَ شُعْبَةً، فَأَفْضَلُهَا قَوْلُ لاَ إِلَهَ إِلاَّ اللَّهُ، وَأَدْنَاهَا إِمَاطَةُ الأَذَى عَنِ الطَّرِيقِ، وَالْحَيَاءُ شُعْبَةٌ مِنَ الإِيمَانِ.",
+                bangla: "হযরত আবু হুরায়রা (রাযিয়াল্লাহু আনহু) হইতে বর্ণিত আছে, রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম এরশাদ করিয়াছেন, ঈমানের সত্তরেরও অধিক অথবা ষাটেরও অধিক শাখা-প্রশাখা রহিয়াছে। তন্মধ্যে সর্বোত্তম শাখা হইল ‘লা-ইলাহা ইল্লাল্লাহ’ বলা এবং সর্বনিম্ন শাখা হইল পথ হইতে কষ্টদায়ক বস্তু সরাইয়া দেওয়া। আর লজ্জা ঈমানের একটি বিশেষ শাখা।"
+            },
+            {
+                id: "seed_2",
+                type: "hadith",
+                chapterId: "iman",
+                number: 2,
+                reference: "হযরত আনাস (রাঃ) - সহীহ বুখারী",
+                arabic: "لاَ يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ.",
+                bangla: "হযরত আনাস (রাযিয়াল্লাহু আনহু) হইতে বর্ণিত, নবী করীম সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম এরশাদ করিয়াছেন, তোমাদের মধ্যে কেহ ততক্ষণ পর্যন্ত পূর্ণ মুমিন হইতে পারিবে না, যতক্ষণ না সে তাহার ভাইয়ের জন্যও তাহাই পছন্দ করে যাহা সে নিজের জন্য পছন্দ করে।"
+            },
+            {
+                id: "seed_3",
+                type: "hadith",
+                chapterId: "iman",
+                number: 3,
+                reference: "হযরত মুআজ ইবনে জাবাল (রাঃ) - আবু দাউদ",
+                arabic: "مَنْ كَانَ آخِرُ كَلاَمِهِ لاَ إِلَهَ إِلاَّ اللَّهُ دَخَلَ الْجَنَّةَ.",
+                bangla: "হযরত মুআজ ইবনে জাবাল (রাযিয়াল্লাহু আনহু) হইতে বর্ণিত আছে, রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম এরশাদ করিয়াছেন, যাহার শেষ বাক্য হইবে ‘লা-ইলাহা ইল্লাল্লাহ’, সে জান্নাতে প্রবেশ করিবে।"
+            },
+            {
+                id: "seed_4",
+                type: "hadith",
+                chapterId: "iman",
+                number: 4,
+                reference: "হযরত ওমর ইবনুল খাত্তাব (রাঃ) - সহীহ মুসলিম",
+                arabic: "الإِسْلاَمُ أَنْ تَشْهَدَ أَنْ لاَ إِلَهَ إِلاَّ اللَّهُ وَأَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، وَتُقِيمَ الصَّلاَةَ، وَتُؤْتِيَ الزَّكَاةَ، وَتَصُومَ رَمَضَانَ، وَتَحُجَّ الْبَيْتَ إِنِ اسْتَطَعْتَ إِلَيْهِ سَبِيلاً.",
+                bangla: "জিবরাঈল (আলাইহিস সালাম) এর প্রশ্নের উত্তরে রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম বলিয়াছেন, ইসলাম হইল এই সাক্ষ্য দেওয়া যে, আল্লাহ ব্যতীত আর কোনো উপাস্য নাই এবং মুহাম্মদ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম তাঁহার প্রেরিত রসূল। আর নামায কায়েম করা, যাকাত দেওয়া, রমযানের রোযা রাখা এবং সামর্থ্য থাকিলে বায়তুল্লাহর হজ্ব করা।"
+            },
+            {
+                id: "seed_5",
+                type: "hadith",
+                chapterId: "iman",
+                number: 5,
+                reference: "হযরত উসমান (রাঃ) - সহীহ মুসলিম",
+                arabic: "مَنْ مَاتَ وَهُوَ يَعْلَمُ أَنَّهُ لاَ إِلَهَ إِلاَّ اللَّهُ دَخَلَ الْجَنَّةَ.",
+                bangla: "হযরত উসমান (রাযিয়াল্লাহু আনহু) বর্ণনা করেন যে, রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম এরশাদ করিয়াছেন, যে ব্যক্তি এই একীন ও বিশ্বাসের সহিত মারা গেল যে, আল্লাহ ব্যতীত কোনো মা'বুদ নাই, সে অবশ্যই জান্নাতে প্রবেশ করিবে।"
+            }
+        ];
+
+        // State variables
+        let chapters = JSON.parse(localStorage.getItem('mh_chapters')) || DEFAULT_CHAPTERS;
+        let hadiths = JSON.parse(localStorage.getItem('mh_hadiths')) || SEED_HADITHS;
+        let activeChapterId = localStorage.getItem('mh_active_chapter') || "iman";
+        let currentArabicClass = localStorage.getItem('mh_ar_fontsize') || "text-2xl sm:text-3xl";
+        let currentContentFilter = 'all'; // 'all', 'ayah', 'hadith'
+
+        // Speech Engine & State
+        let speechSynth = window.speechSynthesis;
+        let playbackQueue = [];
+        let currentQueueIndex = 0;
+        let isPlaying = false;
+        let isPaused = false;
+        let currentUtterances = [];
+
+        // Wake Lock & Background Audio Keep-Alive
+        let wakeLockSentinel = null;
+        let silentAudioElement = null;
+        let webAudioContext = null;
+        let webAudioGain = null;
+
+        // Initialize Web Audio API continuous tone (inaudible) to prevent browser background freezing
+        function initContinuousWebAudio() {
+            try {
+                if (!webAudioContext) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        webAudioContext = new AudioContext();
+                        const osc = webAudioContext.createOscillator();
+                        webAudioGain = webAudioContext.createGain();
+                        // 0 gain makes it completely silent while keeping the audio bus active for OS
+                        webAudioGain.gain.setValueAtTime(0.001, webAudioContext.currentTime);
+                        osc.frequency.setValueAtTime(440, webAudioContext.currentTime);
+                        osc.connect(webAudioGain);
+                        webAudioGain.connect(webAudioContext.destination);
+                        osc.start();
+                    }
+                }
+                if (webAudioContext && webAudioContext.state === 'suspended') {
+                    webAudioContext.resume();
+                }
+            } catch (err) {
+                console.log("WebAudio keep-alive initialization note:", err);
+            }
+        }
+
+        // Create a silent audio element to prevent mobile browser suspension in background
+        function initSilentAudioKeepAlive() {
+            if (!silentAudioElement) {
+                silentAudioElement = document.createElement('audio');
+                silentAudioElement.loop = true;
+                // Tiny base64 encoded silent WAV file
+                silentAudioElement.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+                silentAudioElement.setAttribute('playsinline', '');
+                document.body.appendChild(silentAudioElement);
+            }
+        }
+
+        async function requestScreenWakeLock() {
+            const toggle = document.getElementById('keepScreenOnToggle');
+            if (toggle && !toggle.checked) return;
+
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLockSentinel = await navigator.wakeLock.request('screen');
+                    updateWakeLockUI(true);
+                    wakeLockSentinel.addEventListener('release', () => {
+                        updateWakeLockUI(false);
+                    });
+                } catch (err) {
+                    console.log('WakeLock not supported or denied:', err);
+                }
+            }
+        }
+
+        function releaseScreenWakeLock() {
+            if (wakeLockSentinel !== null) {
+                wakeLockSentinel.release().then(() => {
+                    wakeLockSentinel = null;
+                    updateWakeLockUI(false);
+                }).catch(() => {});
+            }
+        }
+
+        function updateWakeLockUI(active) {
+            const statusLabel = document.getElementById('wakeLockStatus');
+            if (statusLabel) {
+                statusLabel.innerText = active ? "স্ক্রিন সজাগ রাখা হয়েছে" : "স্বাভাবিক মোড";
+                statusLabel.className = active ? "font-semibold text-emerald-700" : "font-medium text-slate-500";
+            }
+        }
+
+        function toggleManualWakeLock(enabled) {
+            if (enabled && isPlaying) {
+                requestScreenWakeLock();
+            } else if (!enabled) {
+                releaseScreenWakeLock();
+            }
+        }
+
+        function playSilentAudio() {
+            initSilentAudioKeepAlive();
+            initContinuousWebAudio();
+            if (silentAudioElement) {
+                silentAudioElement.play().catch(e => console.log("Silent audio autoplay note:", e));
+            }
+        }
+
+        function pauseSilentAudio() {
+            if (silentAudioElement) {
+                silentAudioElement.pause();
+            }
+            if (webAudioContext && webAudioContext.state === 'running') {
+                webAudioContext.suspend().catch(() => {});
+            }
+        }
+
+        // Pocket Mode Toggle (Pitch-black screen to save battery like screen-off)
+        function togglePocketMode(activate) {
+            const overlay = document.getElementById('pocketOverlay');
+            if (activate) {
+                overlay.classList.remove('hidden');
+                // Ensure audio is playing if user activates pocket mode directly
+                if (!isPlaying && !isPaused) {
+                    startOrResumePlayback();
+                }
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function setupMediaSession(title, subtitle) {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: title || 'মুন্তাখাব হাদীস স্টাডি',
+                    artist: subtitle || 'হাদীস পাঠ চলছে',
+                    album: 'মুন্তাখাব আহাদীস'
+                });
+
+                navigator.mediaSession.setActionHandler('play', () => startOrResumePlayback());
+                navigator.mediaSession.setActionHandler('pause', () => pausePlayback());
+                navigator.mediaSession.setActionHandler('stop', () => stopPlayback());
+            }
+        }
+
+        let availableVoices = [];
+        let selectedArabicVoice = null;
+        let selectedBanglaVoice = null;
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = speechSynth.getVoices();
+            updateSelectedVoices();
+        }
+
+        function updateSelectedVoices() {
+            if (availableVoices.length === 0) return;
+            const preference = document.getElementById('voicePreference') ? document.getElementById('voicePreference').value : 'male';
+
+            // Filter Arabic voices
+            const arVoices = availableVoices.filter(v => v.lang.toLowerCase().includes('ar'));
+            // Filter Bengali voices
+            const bnVoices = availableVoices.filter(v => v.lang.toLowerCase().includes('bn'));
+
+            if (preference === 'male') {
+                // Try finding male voice indicators (male, david, george, tariq, etc.)
+                selectedArabicVoice = arVoices.find(v => /male|tarik|maged|naif|hoda|salman/i.test(v.name)) || arVoices[0] || null;
+                selectedBanglaVoice = bnVoices.find(v => /male|man|pradeep|bashkar/i.test(v.name)) || bnVoices[0] || null;
+            } else if (preference === 'female') {
+                // Try finding female voice indicators (female, zira, leila, zeina, etc.)
+                selectedArabicVoice = arVoices.find(v => /female|zeina|laila|salma|mariam/i.test(v.name)) || arVoices[0] || null;
+                selectedBanglaVoice = bnVoices.find(v => /female|woman|mithu|tanisha/i.test(v.name)) || bnVoices[0] || null;
+            } else {
+                // System default
+                selectedArabicVoice = arVoices[0] || null;
+                selectedBanglaVoice = bnVoices[0] || null;
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function renderChapters() {
+            const container = document.getElementById('chaptersContainer');
+            const searchVal = document.getElementById('chapterSearch').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = chapters.filter(c => c.title.toLowerCase().includes(searchVal));
+            document.getElementById('chapterCountBadge').innerText = `${chapters.length} টি অধ্যায়`;
+
+            filtered.forEach(ch => {
+                const count = hadiths.filter(h => h.chapterId === ch.id).length;
+                const isActive = ch.id === activeChapterId;
+
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-3.5 py-3 rounded-xl transition flex items-center justify-between text-sm ${
+                    isActive 
+                        ? 'bg-emerald-800 text-white font-medium shadow-sm' 
+                        : 'hover:bg-slate-100 text-slate-700'
+                }`;
+                btn.onclick = () => selectChapter(ch.id);
+
+                btn.innerHTML = `
+                    <div class="truncate pr-2">
+                        <p class="truncate font-semibold">${ch.title}</p>
+                        <span class="text-[11px] ${isActive ? 'text-emerald-200' : 'text-slate-400'}">পৃষ্ঠা: ${ch.page || 'উৎস'}</span>
+                    </div>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-bold ${
+                        isActive ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                    }">${count}</span>
+                `;
+                container.appendChild(btn);
+            });
+
+            // Sync modal select dropdowns
+            const modalSelect = document.getElementById('modalChapterSelect');
+            const bulkModalSelect = document.getElementById('bulkModalChapterSelect');
+            const optionsHtml = chapters.map(c => `<option value="${c.id}" ${c.id === activeChapterId ? 'selected' : ''}>${c.title}</option>`).join('');
+            if (modalSelect) modalSelect.innerHTML = optionsHtml;
+            if (bulkModalSelect) bulkModalSelect.innerHTML = optionsHtml;
+        }
+
+        function setContentFilter(filterType) {
+            currentContentFilter = filterType;
+            ['all', 'ayah', 'hadith'].forEach(t => {
+                const btn = document.getElementById(`filter${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+                if (t === filterType) {
+                    btn.className = "px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-emerald-700 font-medium";
+                }
+            });
+            renderHadiths();
+        }
+
+        function renderHadiths() {
+            const list = document.getElementById('hadithListContainer');
+            const emptyState = document.getElementById('emptyState');
+            const currentCh = chapters.find(c => c.id === activeChapterId);
+            
+            if (currentCh) {
+                document.getElementById('currentChapterTitle').innerText = currentCh.title;
+            }
+
+            // Get hadiths belonging to this chapter
+            const allInChapter = hadiths.filter(h => h.chapterId === activeChapterId);
+            const totalAyah = allInChapter.filter(h => h.type === 'ayah').length;
+            const totalHadith = allInChapter.filter(h => (h.type || 'hadith') === 'hadith').length;
+
+            document.getElementById('currentChapterStats').innerHTML = `<i class="fa-solid fa-book-quran mr-1 text-emerald-600"></i> আয়াত: ${totalAyah} টি | <i class="fa-solid fa-scroll mr-1 text-amber-600"></i> হাদিস: ${totalHadith} টি`;
+
+            // Filter by selected tab (All, Ayah, Hadith)
+            let chapterItems = allInChapter;
+            if (currentContentFilter === 'ayah') {
+                chapterItems = allInChapter.filter(h => h.type === 'ayah');
+            } else if (currentContentFilter === 'hadith') {
+                chapterItems = allInChapter.filter(h => (h.type || 'hadith') === 'hadith');
+            }
+
+            // Sort: Ayahs first by number, then Hadiths by original book number
+            chapterItems.sort((a, b) => {
+                const typeA = a.type || 'hadith';
+                const typeB = b.type || 'hadith';
+                if (typeA !== typeB) {
+                    return typeA === 'ayah' ? -1 : 1;
+                }
+                return Number(a.number) - Number(b.number);
+            });
+
+            if (chapterItems.length === 0) {
+                list.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            list.innerHTML = '';
+
+            chapterItems.forEach(h => {
+                const isAyah = h.type === 'ayah';
+                const card = document.createElement('div');
+                card.id = `hadith-card-${h.id}`;
+                card.className = `bg-white p-5 sm:p-6 rounded-2xl shadow-sm border transition-all duration-200 relative group ${isAyah ? 'border-emerald-200' : 'border-slate-200'}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold ${isAyah ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'}">
+                                ${isAyah ? '<i class="fa-solid fa-book-quran mr-1"></i> আয়াত নং' : '<i class="fa-solid fa-scroll mr-1"></i> হাদিস নং'} ${h.number}
+                            </span>
+                            <span class="text-xs text-slate-500 font-medium">${h.reference || (isAyah ? 'পবিত্র কুরআনুল কারীম' : 'মুন্তাখাব হাদীস')}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Read this individual hadith -->
+                            <button onclick="playSingleHadith('${h.id}')" title="শুধু এই বাণীটি শুনুন" class="w-8 h-8 rounded-lg ${isAyah ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-600' : 'bg-amber-50 text-amber-700 hover:bg-amber-600'} hover:text-white transition flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                            <!-- Edit -->
+                            <button onclick="editHadith('${h.id}')" title="সম্পাদনা করুন" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <!-- Delete -->
+                            <button onclick="deleteHadith('${h.id}')" title="মুছে ফেলুন" class="w-8 h-8 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Arabic Text with Classical Quranic Font -->
+                    ${h.arabic ? `
+                    <div class="arabic-text-container">
+                        <div class="arabic-text ${currentArabicClass} text-slate-900 tracking-wide mb-4 text-right selection:bg-emerald-100 border-b border-slate-50 pb-3">
+                            ${h.arabic}
+                        </div>
+                    </div>` : ''}
+
+                    <!-- Bengali Translation -->
+                    <div class="text-sm sm:text-base text-slate-700 leading-relaxed ${h.arabic ? 'pt-1' : ''}">
+                        <strong class="${isAyah ? 'text-emerald-800' : 'text-slate-800'} font-semibold">অনুবাদ:</strong> ${h.bangla}
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+        }
+
+        function changeArabicFontSize(newClass) {
+            currentArabicClass = newClass;
+            localStorage.setItem('mh_ar_fontsize', newClass);
+            renderHadiths();
+        }
+
+        function parseSequenceString(inputStr) {
+            if (!inputStr || !inputStr.trim()) return [];
+            const resultNumbers = [];
+            const segments = inputStr.split(/[,+]/);
+
+            segments.forEach(seg => {
+                const cleanSeg = seg.trim();
+                if (cleanSeg.includes('-')) {
+                    const parts = cleanSeg.split('-');
+                    const start = parseInt(parts[0], 10);
+                    const end = parseInt(parts[1], 10);
+                    if (!isNaN(start) && !isNaN(end)) {
+                        const low = Math.min(start, end);
+                        const high = Math.max(start, end);
+                        for (let i = low; i <= high; i++) {
+                            resultNumbers.push(i);
+                        }
+                    }
+                } else {
+                    const num = parseInt(cleanSeg, 10);
+                    if (!isNaN(num)) {
+                        resultNumbers.push(num);
+                    }
+                }
+            });
+
+            return resultNumbers;
+        }
+
+        function startOrResumePlayback() {
+            // Check if paused and speech synth is paused
+            if (isPaused && speechSynth.paused) {
+                speechSynth.resume();
+                isPaused = false;
+                isPlaying = true;
+                updatePlaybackButtons();
+                document.getElementById('playingStatusText').innerText = "অডিও পাঠ চলছে...";
+                return;
+            }
+
+            // Otherwise, start fresh sequence
+            startSequencePlayback();
+        }
+
+        function startSequencePlayback() {
+            stopPlayback();
+
+            const seqInput = document.getElementById('sequenceInput').value.trim();
+            const chapterHadiths = hadiths.filter(h => h.chapterId === activeChapterId);
+
+            if (chapterHadiths.length === 0) {
+                showToast("এই অধ্যায়ে কোনো আয়াত বা হাদিস নেই! আগে যুক্ত করুন।", "error");
+                return;
+            }
+
+            // Filter items based on active tab (all, ayah, hadith)
+            let currentPool = chapterHadiths;
+            if (currentContentFilter === 'ayah') {
+                currentPool = chapterHadiths.filter(h => h.type === 'ayah');
+            } else if (currentContentFilter === 'hadith') {
+                currentPool = chapterHadiths.filter(h => (h.type || 'hadith') === 'hadith');
+            }
+
+            let selectedHadiths = [];
+
+            if (!seqInput) {
+                // If sequence box is empty, read all filtered in sorted order
+                selectedHadiths = [...currentPool].sort((a, b) => {
+                    const typeA = a.type || 'hadith';
+                    const typeB = b.type || 'hadith';
+                    if (typeA !== typeB) return typeA === 'ayah' ? -1 : 1;
+                    return Number(a.number) - Number(b.number);
+                });
+            } else {
+                const targetNumbers = parseSequenceString(seqInput);
+                if (targetNumbers.length === 0) {
+                    showToast("দয়া করে সঠিক নম্বর দিন (যেমন: 1-5 অথবা 1, 3, 5)", "error");
+                    return;
+                }
+                
+                targetNumbers.forEach(num => {
+                    // Try to find matching number
+                    const found = currentPool.find(h => Number(h.number) === num);
+                    if (found) selectedHadiths.push(found);
+                });
+
+                if (selectedHadiths.length === 0) {
+                    showToast("প্রদত্ত নম্বরের কোনো আয়াত বা হাদিস এই অধ্যায়ে পাওয়া যায়নি।", "error");
+                    return;
+                }
+            }
+
+            playbackQueue = selectedHadiths;
+            currentQueueIndex = 0;
+            isPlaying = true;
+            isPaused = false;
+            updatePlaybackButtons();
+            playNextInQueue();
+        }
+
+        function playSingleHadith(hadithId) {
+            stopPlayback();
+            const found = hadiths.find(h => h.id === hadithId);
+            if (!found) return;
+
+            playbackQueue = [found];
+            currentQueueIndex = 0;
+            isPlaying = true;
+            isPaused = false;
+            updatePlaybackButtons();
+            playNextInQueue();
+        }
+
+        function playNextInQueue() {
+            if (!isPlaying || currentQueueIndex >= playbackQueue.length) {
+                stopPlayback();
+                showToast("পড়া সম্পন্ন হয়েছে।", "success");
+                togglePocketMode(false);
+                return;
+            }
+
+            const hadith = playbackQueue[currentQueueIndex];
+            highlightPlayingCard(hadith.id);
+
+            // Update pocket mode title
+            const pocketTitle = document.getElementById('pocketCurrentTitle');
+            if (pocketTitle) {
+                pocketTitle.innerText = `হাদিস নং ${hadith.number}: ${hadith.reference || 'মুন্তাখাব হাদিস'}`;
+            }
+
+            // Keep screen awake & background audio alive during playback
+            requestScreenWakeLock();
+            playSilentAudio();
+            setupMediaSession(`হাদিস নং: ${hadith.number}`, hadith.reference || 'মুন্তাখাব হাদিস');
+
+            const readArabic = document.getElementById('readArabicCheck').checked;
+            const readBangla = document.getElementById('readBanglaCheck').checked;
+            const rate = parseFloat(document.getElementById('playbackRate').value) || 1.0;
+
+            if (!readArabic && !readBangla) {
+                showToast("অনুগ্রহ করে আরবি অথবা বাংলা পড়ার অপশন চেক করুন।", "error");
+                stopPlayback();
+                return;
+            }
+
+            const queueToSpeak = [];
+
+            // 1. Arabic Utterance (only if selected and exists)
+            if (readArabic && hadith.arabic) {
+                const arUtterance = new SpeechSynthesisUtterance(hadith.arabic);
+                arUtterance.lang = 'ar-SA';
+                if (selectedArabicVoice) arUtterance.voice = selectedArabicVoice;
+                arUtterance.rate = rate * 0.92; // Slightly steady for tajweed/clarity
+                queueToSpeak.push(arUtterance);
+            }
+
+            // 2. Bangla Utterance (only if selected and exists)
+            if (readBangla && hadith.bangla) {
+                const bnUtterance = new SpeechSynthesisUtterance(hadith.bangla);
+                bnUtterance.lang = 'bn-BD';
+                if (selectedBanglaVoice) bnUtterance.voice = selectedBanglaVoice;
+                bnUtterance.rate = rate;
+                queueToSpeak.push(bnUtterance);
+            }
+
+            if (queueToSpeak.length === 0) {
+                currentQueueIndex++;
+                playNextInQueue();
+                return;
+            }
+
+            // Bind chaining on end of the last utterance in this card
+            queueToSpeak.forEach((utt, idx) => {
+                if (idx === queueToSpeak.length - 1) {
+                    utt.onend = () => {
+                        if (isPlaying && !isPaused) {
+                            currentQueueIndex++;
+                            setTimeout(playNextInQueue, 700);
+                        }
+                    };
+                }
+                utt.onerror = (e) => {
+                    console.warn("Audio synth event:", e);
+                    if (isPlaying && !isPaused && idx === queueToSpeak.length - 1) {
+                        currentQueueIndex++;
+                        setTimeout(playNextInQueue, 700);
+                    }
+                };
+            });
+
+            // Speak queue
+            queueToSpeak.forEach(u => speechSynth.speak(u));
+        }
+
+        function pausePlayback() {
+            if (speechSynth.speaking && !speechSynth.paused) {
+                speechSynth.pause();
+                isPaused = true;
+                isPlaying = false;
+                pauseSilentAudio();
+                releaseScreenWakeLock();
+                updatePlaybackButtons();
+                document.getElementById('playingStatusText').innerText = "অডিও সাময়িক স্থগিত (Paused)";
+                showToast("অডিও সাময়িক থামানো হয়েছে (Paused)", "info");
+            }
+        }
+
+        function stopPlayback() {
+            if (speechSynth) {
+                speechSynth.cancel();
+            }
+            isPlaying = false;
+            isPaused = false;
+            playbackQueue = [];
+            currentQueueIndex = 0;
+            pauseSilentAudio();
+            releaseScreenWakeLock();
+            document.querySelectorAll('.playing-active').forEach(el => el.classList.remove('playing-active'));
+            updatePlaybackButtons();
+        }
+
+        function updatePlaybackButtons() {
+            const playBtn = document.getElementById('playSequenceBtn');
+            const playText = document.getElementById('playBtnText');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const badge = document.getElementById('playingStatusBadge');
+
+            if (isPlaying) {
+                playBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden');
+                stopBtn.classList.remove('hidden');
+                badge.classList.remove('hidden');
+            } else if (isPaused) {
+                playBtn.classList.remove('hidden');
+                playText.innerText = "পুনরায় চালু";
+                pauseBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                badge.classList.remove('hidden');
+            } else {
+                playBtn.classList.remove('hidden');
+                playText.innerText = "শুনুন";
+                pauseBtn.classList.add('hidden');
+                stopBtn.classList.add('hidden');
+                badge.classList.add('hidden');
+            }
+        }
+
+        function highlightPlayingCard(hadithId) {
+            document.querySelectorAll('.playing-active').forEach(el => el.classList.remove('playing-active'));
+            const card = document.getElementById(`hadith-card-${hadithId}`);
+            if (card) {
+                card.classList.add('playing-active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function openModal(modalId) {
+            if (modalId === 'addModal') {
+                document.getElementById('hadithForm').reset();
+                document.getElementById('editHadithId').value = '';
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-emerald-600"></i> নতুন আয়াত/হাদিস সংরক্ষণ';
+                document.getElementById('modalChapterSelect').value = activeChapterId;
+                
+                // Auto suggest next sequence number
+                const maxNum = hadiths
+                    .filter(h => h.chapterId === activeChapterId && (h.type || 'hadith') === 'hadith')
+                    .reduce((max, h) => Math.max(max, Number(h.number) || 0), 0);
+                document.getElementById('modalNumber').value = maxNum + 1;
+            } else if (modalId === 'bulkModal') {
+                document.getElementById('bulkModalChapterSelect').value = activeChapterId;
+                document.getElementById('bulkTextInput').value = '';
+                document.getElementById('bulkParseStatus').innerText = '';
+            }
+
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function saveHadith(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editHadithId').value;
+            const chapterId = document.getElementById('modalChapterSelect').value;
+            const type = document.getElementById('modalItemType').value;
+            const number = parseInt(document.getElementById('modalNumber').value, 10);
+            const reference = document.getElementById('modalReference').value.trim();
+            const arabic = document.getElementById('modalArabic').value.trim();
+            const bangla = document.getElementById('modalBangla').value.trim();
+
+            if (editId) {
+                // Update
+                const idx = hadiths.findIndex(h => h.id === editId);
+                if (idx !== -1) {
+                    hadiths[idx] = { ...hadiths[idx], type, chapterId, number, reference, arabic, bangla };
+                    showToast("সফলভাবে আপডেট করা হয়েছে।", "success");
+                }
+            } else {
+                // Insert new
+                const newHadith = {
+                    id: "h_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+                    type,
+                    chapterId,
+                    number,
+                    reference,
+                    arabic,
+                    bangla
+                };
+                hadiths.push(newHadith);
+                showToast("সফলভাবে সংরক্ষিত হয়েছে!", "success");
+            }
+
+            saveToLocalStorage();
+            activeChapterId = chapterId;
+            renderChapters();
+            renderHadiths();
+            closeModal('addModal');
+        }
+
+        function editHadith(id) {
+            const h = hadiths.find(x => x.id === id);
+            if (!h) return;
+
+            document.getElementById('editHadithId').value = h.id;
+            document.getElementById('modalItemType').value = h.type || 'hadith';
+            document.getElementById('modalChapterSelect').value = h.chapterId;
+            document.getElementById('modalNumber').value = h.number;
+            document.getElementById('modalReference').value = h.reference || '';
+            document.getElementById('modalArabic').value = h.arabic || '';
+            document.getElementById('modalBangla').value = h.bangla;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-emerald-600"></i> সম্পাদনা';
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+
+        // --- NEW POWERFUL BULK IMPORT PARSER (একসাথে ৫-১০টি বা ২০টি পেস্ট করার লজিক) ---
+        function processBulkImport() {
+            const rawText = document.getElementById('bulkTextInput').value.trim();
+            const chapterId = document.getElementById('bulkModalChapterSelect').value;
+            const defaultCategory = document.getElementById('bulkCategorySelect').value;
+
+            if (!rawText) {
+                showToast("দয়া করে টেক্সট পেস্ট করুন!", "error");
+                return;
+            }
+
+            // Split items either by separator '---' or double newlines or blocks starting with '[' or 'নম্বর:'
+            const blocks = rawText.split(/(?:---|={3,}|\n\s*\n\s*\[|\n\s*\n\s*(?:হাদিস|আয়াত)\s*নং)/i);
+            const parsedItems = [];
+            let currentNumberCount = hadiths.filter(h => h.chapterId === chapterId).length;
+
+            blocks.forEach((block, idx) => {
+                const b = block.trim();
+                if (!b) return;
+
+                let type = defaultCategory === 'auto' ? 'hadith' : defaultCategory;
+                let number = currentNumberCount + idx + 1;
+                let reference = '';
+                let arabic = '';
+                let bangla = '';
+
+                // Extract Number (কিতাবের আসল নম্বর)
+                const numMatch = b.match(/(?:নম্বর|নং|number)\s*[:：]\s*(\d+)/i) || b.match(/(?:হাদিস|আয়াত)\s*নং\s*[:：]?\s*(\d+)/i);
+                if (numMatch) {
+                    number = parseInt(numMatch[1], 10);
+                }
+
+                // Extract Type (আয়াত নাকি হাদিস)
+                if (b.includes('আয়াত') || b.includes('কুরআন') || b.includes('ayah') || defaultCategory === 'ayah') {
+                    type = 'ayah';
+                }
+
+                // Extract Reference (সূত্র / রাবী / কিতাব)
+                const refMatch = b.match(/(?:সূত্র|রাবী|রেফারেন্স|উৎস|কিতাব|reference)\s*[:：]\s*([^\n\]]+)/i);
+                if (refMatch) {
+                    reference = refMatch[1].trim();
+                }
+
+                // Extract Arabic text
+                const arMatch = b.match(/(?:আরবি|arabic|আরবী)\s*[:：]\s*([\s\S]*?)(?=(?:বাংলা|bangla|অনুবাদ|অর্থ|উৎস|---|$))/i);
+                if (arMatch) {
+                    arabic = arMatch[1].trim();
+                }
+
+                // Extract Bangla translation
+                const bnMatch = b.match(/(?:বাংলা|bangla|অনুবাদ|অর্থ)\s*[:：]\s*([\s\S]*?)(?=(?:---|$))/i);
+                if (bnMatch) {
+                    bangla = bnMatch[1].trim();
+                } else if (!arabic) {
+                    // Fallback if no specific tag found
+                    bangla = b;
+                }
+
+                if (bangla || arabic) {
+                    parsedItems.push({
+                        id: "b_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+                        type: type,
+                        chapterId: chapterId,
+                        number: number,
+                        reference: reference || (type === 'ayah' ? 'আল-কুরআনুল কারীম' : 'মুন্তাখাব হাদীস'),
+                        arabic: arabic,
+                        bangla: bangla
+                    });
+                }
+            });
+
+            if (parsedItems.length === 0) {
+                showToast("কোনো হাদিস বা আয়াত সনাক্ত করা যায়নি। ফরম্যাট চেক করুন।", "error");
+                return;
+            }
+
+            // Append parsed items to main database
+            hadiths = hadiths.concat(parsedItems);
+            saveToLocalStorage();
+            activeChapterId = chapterId;
+            renderChapters();
+            renderHadiths();
+            closeModal('bulkModal');
+            showToast(`সফলভাবে ${parsedItems.length} টি আয়াত/হাদিস কিতাবের নম্বরে সংরক্ষিত হয়েছে!`, "success");
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function saveHadith(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editHadithId').value;
+            const chapterId = document.getElementById('modalChapterSelect').value;
+            const number = parseInt(document.getElementById('modalNumber').value, 10);
+            const reference = document.getElementById('modalReference').value.trim();
+            const arabic = document.getElementById('modalArabic').value.trim();
+            const bangla = document.getElementById('modalBangla').value.trim();
+
+            if (editId) {
+                // Update
+                const idx = hadiths.findIndex(h => h.id === editId);
+                if (idx !== -1) {
+                    hadiths[idx] = { ...hadiths[idx], chapterId, number, reference, arabic, bangla };
+                    showToast("হাদিসটি সফলভাবে আপডেট করা হয়েছে।", "success");
+                }
+            } else {
+                // Insert new
+                const newHadith = {
+                    id: "h_" + Date.now(),
+                    chapterId,
+                    number,
+                    reference,
+                    arabic,
+                    bangla
+                };
+                hadiths.push(newHadith);
+                showToast("নতুন হাদিসটি সফলভাবে সংরক্ষিত হয়েছে!", "success");
+            }
+
+            saveToLocalStorage();
+            activeChapterId = chapterId;
+            renderChapters();
+            renderHadiths();
+            closeModal('addModal');
+        }
+
+        function editHadith(id) {
+            const h = hadiths.find(x => x.id === id);
+            if (!h) return;
+
+            document.getElementById('editHadithId').value = h.id;
+            document.getElementById('modalChapterSelect').value = h.chapterId;
+            document.getElementById('modalNumber').value = h.number;
+            document.getElementById('modalReference').value = h.reference || '';
+            document.getElementById('modalArabic').value = h.arabic || '';
+            document.getElementById('modalBangla').value = h.bangla;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-emerald-600"></i> হাদিস সম্পাদনা';
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+
+        function deleteHadith(id) {
+            hadiths = hadiths.filter(x => x.id !== id);
+            saveToLocalStorage();
+            renderChapters();
+            renderHadiths();
+            showToast("হাদিসটি তালিকা থেকে মুছে দেওয়া হয়েছে।", "info");
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('mh_hadiths', JSON.stringify(hadiths));
+            localStorage.setItem('mh_chapters', JSON.stringify(chapters));
+        }
+
+        function exportData() {
+            const payload = {
+                version: 1.1,
+                exportDate: new Date().toISOString(),
+                chapters: chapters,
+                hadiths: hadiths
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `muntakhab_ahadith_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("সম্পূর্ণ ডাটা ফাইল সফলভাবে ডাউনলোড হয়েছে।", "success");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.hadiths && Array.isArray(parsed.hadiths)) {
+                        hadiths = parsed.hadiths;
+                        if (parsed.chapters && Array.isArray(parsed.chapters)) {
+                            chapters = parsed.chapters;
+                        }
+                        saveToLocalStorage();
+                        renderChapters();
+                        renderHadiths();
+                        showToast("ডাটা সফলভাবে রিস্টোর হয়েছে!", "success");
+                    } else {
+                        showToast("ফাইলের ফরম্যাট সঠিক নয়।", "error");
+                    }
+                } catch (err) {
+                    showToast("ফাইল পড়তে সমস্যা হয়েছে।", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(msg, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const icon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = msg;
+            if (type === "error") {
+                icon.className = "fa-solid fa-circle-exclamation text-rose-400 text-base";
+            } else if (type === "info") {
+                icon.className = "fa-solid fa-circle-info text-sky-400 text-base";
+            } else {
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            }
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        window.onload = function () {
+            // Set stored font size in selector
+            const sizeSelector = document.getElementById('arabicFontSize');
+            if (sizeSelector && currentArabicClass) {
+                sizeSelector.value = currentArabicClass;
+            }
+            renderChapters();
+            renderHadiths();
+        };
+    </script>
+</body>
+</html>
